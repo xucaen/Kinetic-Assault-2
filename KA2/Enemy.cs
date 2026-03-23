@@ -1,0 +1,160 @@
+﻿using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace KA2
+{
+    // These match the rows in your uploaded image!
+    public enum EnemyState { Idle = 0, Charge = 1, Fire = 2, Recoil = 3, Desperation = 4, Variant = 5 }
+
+    public class Enemy
+    {
+        // 1. Texture and Positioning
+        private Texture2D _texture;
+        public Vector2 Position;
+       
+        public bool IsActive = true;
+
+        // 2. Animation Variables
+        private int _frameWidth = 32;  // The width of one robot
+        private int _frameHeight = 32; // The height of one robot
+        private int _currentFrame = 0;
+        private int _totalFrames = 5;  // 5 robots per row
+        private double _frameTimer = 0;
+        private double _fps = 0.15;    // Seconds per frame (Speed of animation)
+
+        // 3. State Variables
+        private EnemyBrain _brain;
+
+        //bullets
+        public  Meteor _meteor;
+        private bool _hasFiredThisCycle = false;
+
+        // Constructor: Runs when you "New up" an enemy
+        public Enemy(Texture2D texture, Vector2 startPosition)
+        {
+            _texture = texture;
+            Position = startPosition;
+            _brain = new EnemyBrain();
+        }
+
+        public void LoadContent(Microsoft.Xna.Framework.Content.ContentManager content)
+        {
+            
+            
+        }
+        public void Update(GameTime gameTime)
+        {
+            if (!IsActive) return;
+
+            // 1. Run the "Brain" (State logic)
+            _brain.Update(gameTime);
+
+            // 2. Run the "Body" (Animation logic)
+            UpdateAnimation(gameTime);
+
+            // 3. Handle Firing (Wait for meteor to finish)
+            
+            HandleFiringLogic(gameTime);
+
+            // --- MOVEMENT LOGIC ---
+            // Let's make them drift down slowly
+
+        }
+
+
+
+        public void Draw(SpriteBatch spriteBatch)
+        {
+            if (!IsActive) return;
+
+            // Calculate the "Slice" of the sprite sheet
+            // X shifts based on animation frame
+            // Y shifts based on the Row (the Enum value)
+
+
+            Rectangle sourceRect = new Rectangle(
+                _currentFrame * _frameWidth,
+                (int)_brain.CurrentState * _frameHeight,
+                _frameWidth,
+                _frameHeight
+            );
+
+
+
+            spriteBatch.Draw(_texture, 
+                Position, 
+                sourceRect, 
+                Color.White
+    
+                );
+
+            // Draw the meteor
+            _meteor?.Draw(spriteBatch);
+        }
+
+        public void TakeDamage()
+        {
+            // Transition to the explosion/recoil row in your spritesheet!
+            _brain.ForceState(EnemyState.Recoil);
+
+            // You could also set a timer here to eventually set IsActive = false;
+            // Or just kill it instantly:
+            // IsActive = false; 
+        }
+        private void SpawnMeteor()
+        {
+            // Center the meteor on the robot
+            int meteorWidth = 16;
+            float x = Position.X + (_frameWidth / 2) - (meteorWidth / 2);
+            float y = Position.Y + _frameHeight;
+            _meteor = new Meteor(EnemyAdmiral._meteorTexture, new Vector2(x, y));
+        }
+
+        private void UpdateAnimation(GameTime gameTime)
+        {
+            _frameTimer += gameTime.ElapsedGameTime.TotalSeconds;
+            if (_frameTimer >= _fps)
+            {
+                _currentFrame++;
+                if (_currentFrame >= _totalFrames) _currentFrame = 0;
+                _frameTimer = 0;
+            }
+        }
+        private void HandleFiringLogic(GameTime gameTime)
+        {
+            if (_brain.CurrentState == EnemyState.Fire)
+            {
+                // If we just entered Fire state and haven't spawned the meteor yet
+                if (_meteor == null && !_hasFiredThisCycle)
+                {
+                    SpawnMeteor();
+                    _hasFiredThisCycle = true;
+                }
+
+                // If the meteor is gone (either off-screen or destroyed), go back to Idle
+                if (_meteor == null && _hasFiredThisCycle)
+                {
+                    _brain.ForceState(EnemyState.Idle);
+                    _hasFiredThisCycle = false; // Reset for next time
+                }
+            }
+
+
+            if (_meteor != null)
+            {
+                _meteor.Update(gameTime);
+
+                // Use our new non-mystical check!
+                if (_meteor.Position.Y > Game1.NativeRenderTarget.Height)
+                {
+                    _meteor = null;
+                }
+            }
+        }
+    }
+}
