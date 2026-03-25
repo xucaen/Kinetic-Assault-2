@@ -3,12 +3,16 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace KA2
 {
     public class EnemyAdmiral
     {
         private List<Enemy> _enemies;
+        private Dictionary<string, Wave> _waveLibrary;
+        private string _currentWaveName;
+
 
         private Texture2D _enemyTexture;
         public static Texture2D _meteorTexture;
@@ -24,30 +28,35 @@ namespace KA2
             _enemyTexture = content.Load<Texture2D>("enemy_sprites");
             _meteorTexture = content.Load<Texture2D>("meteors");
 
-            // 1. Define the path data here (This will eventually come from your JSON)
-            List<Vector2> enterPath = new List<Vector2>
-                {
-                    new Vector2(-50, -50),   // Start off-screen
-                    new Vector2(320, 240),  // Swoop to center
-                    new Vector2(320, 100)   // Destination area
-                };
+            // Load and store the library
+            _waveLibrary = Wave.LoadBehaviorLibrary("Wave.dat");
 
-            // 2. Create the Behavior object
-            Behavior swoopIn = new Behavior(enterPath);
-
-            // 3. Call the single method with the data it needs
-            SpawnFormation(10, swoopIn);
+            if (_waveLibrary.ContainsKey("Swoopers"))
+            {
+                _currentWaveName = "Swoopers";
+                SpawnWave(_waveLibrary[_currentWaveName]);
+            }
         }
 
-        private void SpawnFormation(int numOfEnemies, Behavior behavior)
+        private void SpawnWave(Wave wave)
         {
             _enemies.Clear();
 
-            for (int n = 0; n < numOfEnemies; ++n)
+            for (int n = 0; n < wave.EnemyCount; ++n)
             {
-                // Each enemy gets the shared behavior and its index (n)
-                _enemies.Add(new Enemy(_enemyTexture, behavior, n));
+                // Pass all required arguments to the Wave constructor
+                var individualPath = new Wave(
+                    wave.PathPoints.ToList(),
+                    wave.Speed,
+                    wave.DelayBetweenEnemies,
+                    wave.EnemyCount,
+                    wave.NextWaveName
+                );
+
+                var enemy = new Enemy(_enemyTexture, individualPath, n);
+                _enemies.Add(enemy);
             }
+
         }
 
         public void Update(GameTime gameTime)
@@ -60,6 +69,18 @@ namespace KA2
                 if (!_enemies[i].IsActive)
                 {
                     _enemies.RemoveAt(i);
+                }
+            }
+
+            // Logic for Next Wave
+            if (_enemies.Count == 0 && _waveLibrary != null && _currentWaveName != null)
+            {
+                string next = _waveLibrary[_currentWaveName].NextWaveName;
+
+                if (!string.IsNullOrEmpty(next) && _waveLibrary.ContainsKey(next))
+                {
+                    _currentWaveName = next;
+                    SpawnWave(_waveLibrary[_currentWaveName]);
                 }
             }
         }

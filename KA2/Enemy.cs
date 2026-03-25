@@ -13,15 +13,15 @@ namespace KA2
 
     public class Enemy
     {
-        // 1. Texture and Positioning
         private Texture2D _texture;
         public Vector2 Position;
 
-        private Behavior _currentBehavior;
-        private float _speed = 250f;
-        private float _startTimer;
-        private int _indexInWave;
+        // CHANGE: Use a List and an Index instead of a Wave object
+        private List<Vector2> _pathPoints;
+        private int _currentPathIndex = 0;
 
+        private float _speed;
+        private float _startTimer;
         public bool IsActive = true;
 
         // 2. Animation Variables
@@ -40,20 +40,19 @@ namespace KA2
         private bool _hasFiredThisCycle = false;
 
         // Constructor: Runs when you "New up" an enemy
-        public Enemy(Texture2D texture, Behavior behavior, int index)
+        public Enemy(Texture2D texture, Wave wave, int index)
         {
             _texture = texture;
-            _currentBehavior = behavior;
-            _indexInWave = index;
+            // COPY the points from the wave master plan into this specific enemy
+            _pathPoints = wave.PathPoints.ToList();
 
-            // Each enemy waits 0.3 seconds longer than the one before it
-            _startTimer = index * 0.3f;
+            _startTimer = index * (wave.DelayBetweenEnemies / 1000f);
+            _speed = wave.Speed;
 
-            // CLONE the behavior so this enemy has its own private queue to empty
-            _currentBehavior = new Behavior(behavior.PathPoints.ToList());
+            // Start at the first coordinate
+            if (_pathPoints.Count > 0)
+                Position = _pathPoints[0];
 
-            // Start off-screen at the first point of the path
-            Position = _currentBehavior.GetNextTarget();
             _brain = new EnemyBrain();
         }
 
@@ -140,11 +139,6 @@ namespace KA2
             _meteor?.Draw(spriteBatch);
         }
 
-        public void ChangeBehavior(Behavior newBehavior)
-        {
-            _currentBehavior = newBehavior;
-        }
-
         public void TakeDamage()
         {
             // Transition to the explosion/recoil row in your spritesheet!
@@ -209,30 +203,26 @@ namespace KA2
 
         private void HandleMovement(GameTime gameTime)
         {
+
+            if (_pathPoints.Count == 0) return;
+
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            // 1. Handle the staggered entry (The "Wait in line" logic)
-            if (_startTimer > 0)
-            {
-                _startTimer -= dt;
-                return; // Exit early so we don't move yet
-            }
-
-            // 2. If we have no behavior, or we finished it, do nothing (or stay put)
-            if (_currentBehavior == null || _currentBehavior.IsFinished)
-            {
-                // Optional: Once finished with 'Enter', you could auto-trigger 
-                // the transition to their formation spot here if you have a reference.
-                return;
-            }
-
-            // 3. Move logic
-            Vector2 target = _currentBehavior.GetNextTarget();
+            // 1. Get the current target from our list
+            Vector2 target = _pathPoints[_currentPathIndex];
             Vector2 direction = target - Position;
 
-            if (direction.Length() < 5f) // Threshold to consider "Arrived"
+            if (direction.Length() < 5f)
             {
-                _currentBehavior.ReachTarget();
+                // 2. Advance the index
+                _currentPathIndex++;
+
+                // 3. THE LOOP: If we reached the end of the path (the end of 'end:'), 
+                // set index back to 0 to restart at the beginning of 'start:'
+                if (_currentPathIndex >= _pathPoints.Count)
+                {
+                    _currentPathIndex = 0;
+                }
             }
             else
             {
@@ -242,5 +232,6 @@ namespace KA2
 
         }
 
+     
     }
 }

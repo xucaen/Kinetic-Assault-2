@@ -1,0 +1,41 @@
+#waves should be defined in a text file not in code.
+
+#count is the number of enemies to spawn for this wave
+#speed is how fast each enemy moves
+#delay is how long a timespan between each enemy starting their run
+#Next is what wave follows
+
+[Swoopers]
+count=10
+speed=250ms
+delay=300ms
+Next=DiveBombers
+paths
+{
+# Starts off-screen top-left, swoops to center, then circles the top-middle
+start: [-50,-50],[320, 240],[320, 100]
+end:  [320,100],[600,100],[600,16],[40,16],[40,100],[320,100]
+}
+
+[DiveBombers]
+count=5
+speed=600ms
+delay=300ms
+Next=Boss
+paths
+{
+# Starts off-screen right, dives across, and settles in a mid-screen line
+a: [700,-50],[320, 400],[100, 100],[540, 100],[320, 400],[100, 100],[540, 100],[700,-50]
+}
+
+[Boss]
+count=1
+speed=50ms
+delay=1ms
+Next=Swoopers
+paths
+{
+# Box pattern to keep the boss constantly shifting on-screen
+a: [100,100],[540,100],[540,380],[100,380],[100,100]
+b: [540,100],[100,100],[100,380],[540,380],[540,100]
+}
