@@ -16,7 +16,12 @@ namespace KA2
         // 1. Texture and Positioning
         private Texture2D _texture;
         public Vector2 Position;
-       
+
+        private Behavior _currentBehavior;
+        private float _speed = 250f;
+        private float _startTimer;
+        private int _indexInWave;
+
         public bool IsActive = true;
 
         // 2. Animation Variables
@@ -35,10 +40,20 @@ namespace KA2
         private bool _hasFiredThisCycle = false;
 
         // Constructor: Runs when you "New up" an enemy
-        public Enemy(Texture2D texture, Vector2 startPosition)
+        public Enemy(Texture2D texture, Behavior behavior, int index)
         {
             _texture = texture;
-            Position = startPosition;
+            _currentBehavior = behavior;
+            _indexInWave = index;
+
+            // Each enemy waits 0.3 seconds longer than the one before it
+            _startTimer = index * 0.3f;
+
+            // CLONE the behavior so this enemy has its own private queue to empty
+            _currentBehavior = new Behavior(behavior.PathPoints.ToList());
+
+            // Start off-screen at the first point of the path
+            Position = _currentBehavior.GetNextTarget();
             _brain = new EnemyBrain();
         }
 
@@ -69,6 +84,14 @@ namespace KA2
 
             if (!IsActive) return;
 
+            // NEW: If we haven't started yet, don't run brain or firing logic
+            if (_startTimer > 0)
+            {
+                float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+                _startTimer -= dt;
+                return;
+            }
+
             // 1. Run the "Brain" (State logic)
             _brain.Update(gameTime);
 
@@ -80,7 +103,9 @@ namespace KA2
             HandleFiringLogic(gameTime);
 
             // --- MOVEMENT LOGIC ---
-            // Let's make them drift down slowly
+            //
+
+            HandleMovement(gameTime);
 
         }
 
@@ -88,7 +113,7 @@ namespace KA2
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            if (!IsActive) return;
+            if (!IsActive || _startTimer > 0) return;
 
             // Calculate the "Slice" of the sprite sheet
             // X shifts based on animation frame
@@ -104,7 +129,7 @@ namespace KA2
 
 
 
-            spriteBatch.Draw(_texture, 
+            spriteBatch.Draw(_texture,
                 Position, 
                 sourceRect, 
                 Color.White
@@ -113,6 +138,11 @@ namespace KA2
 
             // Draw the meteor
             _meteor?.Draw(spriteBatch);
+        }
+
+        public void ChangeBehavior(Behavior newBehavior)
+        {
+            _currentBehavior = newBehavior;
         }
 
         public void TakeDamage()
@@ -176,5 +206,41 @@ namespace KA2
                 }
             }
         }
+
+        private void HandleMovement(GameTime gameTime)
+        {
+            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            // 1. Handle the staggered entry (The "Wait in line" logic)
+            if (_startTimer > 0)
+            {
+                _startTimer -= dt;
+                return; // Exit early so we don't move yet
+            }
+
+            // 2. If we have no behavior, or we finished it, do nothing (or stay put)
+            if (_currentBehavior == null || _currentBehavior.IsFinished)
+            {
+                // Optional: Once finished with 'Enter', you could auto-trigger 
+                // the transition to their formation spot here if you have a reference.
+                return;
+            }
+
+            // 3. Move logic
+            Vector2 target = _currentBehavior.GetNextTarget();
+            Vector2 direction = target - Position;
+
+            if (direction.Length() < 5f) // Threshold to consider "Arrived"
+            {
+                _currentBehavior.ReachTarget();
+            }
+            else
+            {
+                direction.Normalize();
+                Position += direction * _speed * dt;
+            }
+
+        }
+
     }
 }

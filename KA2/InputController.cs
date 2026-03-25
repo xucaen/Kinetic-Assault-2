@@ -29,13 +29,15 @@ namespace KA2
             else
             {
                 // Fallback to Keyboard if controller is unplugged
+                // Get the current state of the mouse
+                MouseState mstate = Mouse.GetState();
                 KeyboardState kstate = Keyboard.GetState();
                 float x = 0;
-                if (kstate.IsKeyDown(Keys.Left)) x = -1.0f;
-                if (kstate.IsKeyDown(Keys.Right)) x = 1.0f;
+                if (kstate.IsKeyDown(Keys.Left) || kstate.IsKeyDown(Keys.A)) x = -1.0f;
+                if (kstate.IsKeyDown(Keys.Right) || kstate.IsKeyDown(Keys.D)) x = 1.0f;
 
                 Movement = new Vector2(x, 0);
-                IsFiring = kstate.IsKeyDown(Keys.Space);
+                IsFiring = kstate.IsKeyDown(Keys.Space) || (mstate.LeftButton == ButtonState.Pressed);
             }
         }
     }

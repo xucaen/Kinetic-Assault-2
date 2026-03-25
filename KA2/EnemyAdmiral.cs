@@ -19,25 +19,34 @@ namespace KA2
 
         public void LoadContent(ContentManager content)
         {
-            // The Admiral manages the master texture for all enemies
+
+            // YOU NEED THESE TWO LINES!
             _enemyTexture = content.Load<Texture2D>("enemy_sprites");
             _meteorTexture = content.Load<Texture2D>("meteors");
-            // For now, let's spawn a small formation (like Galaga)
-            SpawnFormation();
+
+            // 1. Define the path data here (This will eventually come from your JSON)
+            List<Vector2> enterPath = new List<Vector2>
+                {
+                    new Vector2(-50, -50),   // Start off-screen
+                    new Vector2(320, 240),  // Swoop to center
+                    new Vector2(320, 100)   // Destination area
+                };
+
+            // 2. Create the Behavior object
+            Behavior swoopIn = new Behavior(enterPath);
+
+            // 3. Call the single method with the data it needs
+            SpawnFormation(10, swoopIn);
         }
 
-        private void SpawnFormation()
+        private void SpawnFormation(int numOfEnemies, Behavior behavior)
         {
             _enemies.Clear();
 
-            // Example: Create a 5x2 grid of enemies
-            for (int row = 0; row < 2; row++)
+            for (int n = 0; n < numOfEnemies; ++n)
             {
-                for (int col = 0; col < 5; col++)
-                {
-                    Vector2 pos = new Vector2(150 + (col * 80), 50 + (row * 60));
-                    _enemies.Add(new Enemy(_enemyTexture, pos));
-                }
+                // Each enemy gets the shared behavior and its index (n)
+                _enemies.Add(new Enemy(_enemyTexture, behavior, n));
             }
         }
 
