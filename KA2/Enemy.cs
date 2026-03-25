@@ -31,7 +31,7 @@ namespace KA2
         private EnemyBrain _brain;
 
         //bullets
-        public  Meteor _meteor;
+        public  Missile _meteor;
         private bool _hasFiredThisCycle = false;
 
         // Constructor: Runs when you "New up" an enemy
@@ -112,7 +112,9 @@ namespace KA2
             int meteorWidth = 16;
             float x = Position.X + (_frameWidth / 2) - (meteorWidth / 2);
             float y = Position.Y + _frameHeight;
-            _meteor = new Meteor(EnemyAdmiral._meteorTexture, new Vector2(x, y));
+
+            //TODO: eventually, the Rectangle will be variable depending on evel.
+            _meteor = new Missile(EnemyAdmiral._meteorTexture, new Vector2(x, y), 200f, new Rectangle(0, 0, 16, 16));
         }
 
         private void UpdateAnimation(GameTime gameTime)

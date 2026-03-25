@@ -16,6 +16,15 @@ public class Explosion
     private double _fps = 0.04; // Adjust speed (lower is faster)
     public bool IsFinished = false;
 
+
+    /// <summary>
+    /// Explosion texture courtesy if
+    ///
+    ///https://opengameart.org/content/explosion-7
+    ///Artist: BenHickling
+    /// </summary>
+    /// <param name="texture"></param>
+    /// <param name="pos"></param>
     public Explosion(Texture2D texture, Vector2 pos)
     {
         _texture = texture;

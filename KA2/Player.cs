@@ -19,7 +19,7 @@ namespace KA2
 
 
         //bullets
-        public  Bullet Bullet;
+        public  Missile Bullet;
         private Texture2D _bulletTexture;
 
 
@@ -90,7 +90,7 @@ namespace KA2
                 Bullet.Update(gameTime);
 
                 // If it goes off the top of the screen, delete it so we can fire again
-                if (Bullet.Position.Y < -Bullet.Height)
+                if (Bullet.IsExpired)
                 {
                     Bullet = null;
                 }
@@ -122,7 +122,7 @@ namespace KA2
             // 3. Create the new bullet instance
             // We assign it to _activeBullet. Since our Update loop only fires if 
             // _activeBullet is null, this "locks" the gun until this bullet is gone.
-            Bullet = new Bullet(_bulletTexture, new Vector2(bulletX, bulletY));
+            Bullet = new Missile(_bulletTexture, new Vector2(bulletX, bulletY),-600f,null);
         }
     }
 }
