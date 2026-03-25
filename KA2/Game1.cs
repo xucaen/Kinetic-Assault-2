@@ -23,6 +23,9 @@ namespace KA2
         private List<Explosion> _explosions = new List<Explosion>();
 
 
+        //player lives
+        private float _respawnTimer = 0f;
+        private const float RESPAWN_DELAY = 2.0f; // 2 seconds of witnessing destruction
 
         public Game1()
         {
@@ -83,15 +86,25 @@ namespace KA2
                 Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // Use the Movement vector from our input controller
-            _player.Update(gameTime, Input, NativeRenderTarget.Width);
+            if (_player.IsAlive)
+            {
+                _player.Update(gameTime, Input, NativeRenderTarget.Width);
+                Admiral.Update(gameTime); // Enemies only move/shoot if player is alive
+                CheckCollisions();
+            }
+            else
+            {
+                // PLAYER DEATH STATE
+                _respawnTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-
-            // Admiral handles all enemy updates now
-            Admiral.Update(gameTime);
-
-            CheckCollisions();
-
+                if (_respawnTimer >= RESPAWN_DELAY)
+                {
+                    _respawnTimer = 0f;
+                    _player.Reset(new Vector2(
+                        (NativeRenderTarget.Width / 2) - (_player.Width / 2),
+                        NativeRenderTarget.Height - _player.Height - 50));
+                }
+            }
             // Update explosions and remove finished ones
             for (int i = _explosions.Count - 1; i >= 0; i--)
             {
@@ -218,6 +231,10 @@ namespace KA2
                         {
                             // Explosion for the meteor
                             _explosions.Add(new Explosion(_explosionTexture, meteor.Position));
+                            // Destroy both!
+                            _player.Bullet = null;
+                            alien._meteor = null; // Remove the meteor from the alien
+                            break; // Exit the loop since the bullet is now null
                         }
                     }
                 }
@@ -253,8 +270,11 @@ namespace KA2
                         // PLAYER EXPLOSION: 64x64 size, starting at Y=48
                         _explosions.Add(new Explosion(_explosionTexture, _player.Position));
                         meteor.IsExpired = true;
+                        alien._meteor = null;
                         //TODO: set Player state for taking damage or  blowing up
-
+                        // Trigger the death state
+                        _player.IsAlive = false;
+                        _respawnTimer = 0f; // Reset timer just in case
                     }
                 }
 

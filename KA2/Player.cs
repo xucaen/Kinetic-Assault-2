@@ -8,6 +8,7 @@ namespace KA2
     public class Player
     {
         // State
+        public bool IsAlive = true;
         public Vector2 Position;
         private Texture2D[] _textures;
         private float _speed = 300f;
@@ -59,6 +60,9 @@ namespace KA2
 
         public void Update(GameTime gameTime, InputController input, int screenWidth)
         {
+
+            if (!IsAlive) return; // Stop processing movement/shooting if dead
+
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             // Movement
@@ -99,6 +103,8 @@ namespace KA2
 
         public void Draw(SpriteBatch spriteBatch)
         {
+            if (!IsAlive) return;
+
             spriteBatch.Draw(_textures[_currentFrame], Position, Color.White);
             // Draw all bullets
 
@@ -123,6 +129,13 @@ namespace KA2
             // We assign it to _activeBullet. Since our Update loop only fires if 
             // _activeBullet is null, this "locks" the gun until this bullet is gone.
             Bullet = new Missile(_bulletTexture, new Vector2(bulletX, bulletY),-600f,null);
+        }
+
+        public void Reset(Vector2 startPosition)
+        {
+            Position = startPosition;
+            IsAlive = true;
+            Bullet = null; // Clean up any stray bullets
         }
     }
 }

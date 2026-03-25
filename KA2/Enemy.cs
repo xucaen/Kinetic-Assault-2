@@ -49,6 +49,24 @@ namespace KA2
         }
         public void Update(GameTime gameTime)
         {
+
+            // 1. UPDATE PROJECTILES FIRST
+            // We do this before the "IsActive" check so that even if the 
+            // enemy is dead, their meteor keeps moving and doesn't get stuck!
+            if (_meteor != null)
+            {
+                _meteor.Update(gameTime);
+
+                // If it goes off screen, clean it up
+                if (_meteor.Position.Y > 480)
+                {
+                    _meteor = null;
+                }
+            }
+
+            // 2. THE DEATH CHECK
+
+
             if (!IsActive) return;
 
             // 1. Run the "Brain" (State logic)
@@ -104,7 +122,7 @@ namespace KA2
 
             // You could also set a timer here to eventually set IsActive = false;
             // Or just kill it instantly:
-            // IsActive = false; 
+            IsActive = false; 
         }
         private void SpawnMeteor()
         {
