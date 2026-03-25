@@ -16,12 +16,14 @@ namespace KA2
         public int EnemyCount { get; private set; }
         public string NextWaveName { get; private set; } // Added this
 
-        public Wave(List<Vector2> points, float speed, float delay, int count, string nextWave = null)
+        public int HitsToKill { get; private set; } = 1; // Default to 1
+        public Wave(List<Vector2> points, float speed, float delay, int count, int hitsToKill = 1, string nextWave = null)
         {
             PathPoints = new List<Vector2>(points);
             Speed = speed;
             DelayBetweenEnemies = delay;
             EnemyCount = count;
+            HitsToKill = hitsToKill;
             NextWaveName = nextWave;
         }
 
@@ -45,7 +47,7 @@ namespace KA2
                 {
                     currentSection = trimmed.Substring(1, trimmed.Length - 2);
                     // Create a placeholder Wave - we'll fill data as we go
-                    currentWave = new Wave(new List<Vector2>(), 0, 0, 0, null);
+                    currentWave = new Wave(new List<Vector2>(), 0, 0, 0,0, null);
                     library[currentSection] = currentWave;
                     inPathBlock = false;
                     continue;
@@ -67,6 +69,7 @@ namespace KA2
                         // Strip 'ms' from speed/delay
                         case "speed": currentWave.Speed = float.Parse(val.Replace("ms", "")); break;
                         case "delay": currentWave.DelayBetweenEnemies = float.Parse(val.Replace("ms", "")); break;
+                        case "hits": currentWave.HitsToKill = int.Parse(val); break;
                     }
                 }
 

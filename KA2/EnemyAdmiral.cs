@@ -50,6 +50,7 @@ namespace KA2
                     wave.Speed,
                     wave.DelayBetweenEnemies,
                     wave.EnemyCount,
+                    wave.HitsToKill,
                     wave.NextWaveName
                 );
 

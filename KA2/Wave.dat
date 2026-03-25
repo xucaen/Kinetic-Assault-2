@@ -9,6 +9,7 @@
 count=10
 speed=250ms
 delay=300ms
+hits=2
 Next=DiveBombers
 paths
 {
@@ -21,6 +22,7 @@ end:  [320,100],[600,100],[600,16],[40,16],[40,100],[320,100]
 count=5
 speed=600ms
 delay=300ms
+hits=1
 Next=Boss
 paths
 {
@@ -32,6 +34,7 @@ a: [700,-50],[320, 400],[100, 100],[540, 100],[320, 400],[100, 100],[540, 100],[
 count=1
 speed=50ms
 delay=1ms
+hits=10
 Next=Swoopers
 paths
 {

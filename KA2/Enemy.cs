@@ -13,6 +13,9 @@ namespace KA2
 
     public class Enemy
     {
+        //TODO: this must be a setting in wave.dat
+        private const double CHARGE_DURATION = 1.0;
+
         private Texture2D _texture;
         public Vector2 Position;
 
@@ -21,6 +24,8 @@ namespace KA2
         private int _currentPathIndex = 0;
 
         private float _speed;
+        private int _health;
+        private double _chargeTimer = 0;
         private float _startTimer;
         public bool IsActive = true;
 
@@ -48,6 +53,7 @@ namespace KA2
 
             _startTimer = index * (wave.DelayBetweenEnemies / 1000f);
             _speed = wave.Speed;
+            _health = wave.HitsToKill;
 
             // Start at the first coordinate
             if (_pathPoints.Count > 0)
@@ -144,9 +150,11 @@ namespace KA2
             // Transition to the explosion/recoil row in your spritesheet!
             _brain.ForceState(EnemyState.Recoil);
 
-            // You could also set a timer here to eventually set IsActive = false;
-            // Or just kill it instantly:
-            IsActive = false; 
+            //decrament the hits to kill value
+            if (--_health <= 0)
+            {
+                IsActive = false;
+            }
         }
         private void SpawnMeteor()
         {
@@ -165,12 +173,33 @@ namespace KA2
             if (_frameTimer >= _fps)
             {
                 _currentFrame++;
-                if (_currentFrame >= _totalFrames) _currentFrame = 0;
+                if (_currentFrame >= _totalFrames)
+                {
+                    _currentFrame = 0;
+                    if (_brain.CurrentState == EnemyState.Recoil && IsActive)
+                    {
+                        _brain.ForceState(EnemyState.Idle);
+                    }
+                }
                 _frameTimer = 0;
             }
         }
         private void HandleFiringLogic(GameTime gameTime)
         {
+
+            // 1. If the brain says "Charge", start the timer
+            if (_brain.CurrentState == EnemyState.Charge)
+            {
+                _chargeTimer += gameTime.ElapsedGameTime.TotalSeconds;
+
+                if (_chargeTimer >= CHARGE_DURATION)
+                {
+                    _chargeTimer = 0;
+                    _brain.ForceState(EnemyState.Fire); // Move to firing state
+                }
+            }
+
+
             if (_brain.CurrentState == EnemyState.Fire)
             {
                 // If we just entered Fire state and haven't spawned the meteor yet
