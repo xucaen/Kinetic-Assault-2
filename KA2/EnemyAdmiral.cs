@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static KA2.EnemyColonel;
 
 namespace KA2
 {
@@ -12,7 +13,7 @@ namespace KA2
         private List<Enemy> _enemies;
         private Dictionary<string, Wave> _waveLibrary;
         private string _currentWaveName;
-
+        private EnemyColonel _activeBoss;
 
         private Texture2D _enemyTexture;
         public static Texture2D _meteorTexture;
@@ -41,21 +42,29 @@ namespace KA2
         private void SpawnWave(Wave wave)
         {
             _enemies.Clear();
+            _activeBoss = null;
 
-            for (int n = 0; n < wave.EnemyCount; ++n)
+            if (wave.BossParts.Count > 0)
             {
-                // Pass all required arguments to the Wave constructor
-                var individualPath = new Wave(
-                    wave.Segments,
-                    wave.Speed,
-                    wave.DelayBetweenEnemies,
-                    wave.EnemyCount,
-                    wave.HitsToKill,
-                    wave.NextWaveName
-                );
+                _activeBoss = new EnemyColonel(wave);
+            }
+            else
+            { 
+                for (int n = 0; n < wave.EnemyCount; ++n)
+                {
+                    // Pass all required arguments to the Wave constructor
+                    var individualPath = new Wave(
+                        wave.Segments,
+                        wave.Speed,
+                        wave.DelayBetweenEnemies,
+                        wave.EnemyCount,
+                        wave.HitsToKill,
+                        wave.NextWaveName
+                    );
 
-                var enemy = new Enemy(_enemyTexture, individualPath, n);
-                _enemies.Add(enemy);
+                    var enemy = new Enemy(_enemyTexture, individualPath, n);
+                    _enemies.Add(enemy);
+                }
             }
 
         }

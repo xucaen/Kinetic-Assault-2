@@ -128,7 +128,7 @@ namespace KA2
 
 
 
-        public void Draw(SpriteBatch spriteBatch)
+        public virtual void Draw(SpriteBatch spriteBatch)
         {
             if (!IsActive || _startTimer > 0) return;
 
@@ -244,8 +244,16 @@ namespace KA2
 
         private bool _forward = true; // Track direction along path
 
+        public float CurrentRotation { get; internal set; }
+        public int RotationSpeed { get; internal set; }
+        public float MaxRotation { get; internal set; }
+        public Vector2 Offset { get; internal set; }
+        public float RotationDirection { get; internal set; }
+        public object Health { get; internal set; }
+        public object MaxHealth { get; internal set; }
+        public float MinRotation { get; internal set; }
 
-        private void HandleMovement(GameTime gameTime)
+        protected virtual void HandleMovement(GameTime gameTime)
         {
             if (_segments.Count == 0) return;
 

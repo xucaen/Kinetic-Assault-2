@@ -1,8 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace KA2
 {
@@ -13,17 +15,39 @@ namespace KA2
         public List<Vector2> Points = new List<Vector2>();
         public PathType Type;
     }
+    public class BossPartDefinition
+    {
+        public string Name;
+        public int Hits;
+        public Vector2 Offset;
+        public string TextureName;
+        public Vector2 RotationRange; // X = min, Y = max
+        public float RotationSpeed;
+        public float FireDelay;
+    }
+    public class BossPart
+    {
+        public BossPartDefinition Definition;
+        public int CurrentHits;
+        public float CurrentRotation;    // Current rotation in degrees
+        public float RotationDirection = 1f; // 1 = clockwise, -1 = counter-clockwise
+        public Texture2D Texture;        // Loaded sprite
+        public double DestroyedTime = -1; // Time when destroyed, -1 = alive
+
+          public bool IsDestroyed => CurrentHits <= 0;
+    }
     public class Wave
     {
+        public List<BossPartDefinition> BossParts { get; private set; } = new List<BossPartDefinition>();
         public List<PathSegment> Segments { get; private set; } = new List<PathSegment>();
         public bool IsFinished => Segments.Count == 0;
 
         public float Speed { get; private set; }
         public float DelayBetweenEnemies { get; private set; }
         public int EnemyCount { get; private set; }
-        public string NextWaveName { get; private set; } 
+        public string NextWaveName { get; private set; }
 
-        public int HitsToKill { get; private set; } = 1; 
+        public int HitsToKill { get; private set; } = 1;
         public Wave(List<PathSegment> segments, float speed, float delay, int count, int hitsToKill = 1, string nextWave = null)
         {
             Segments = segments;
@@ -46,7 +70,7 @@ namespace KA2
 
             foreach (var line in lines)
             {
-                string trimmed = line.Split('#')[0].Trim(); // Remove comments
+                string trimmed = line.Split('#',';')[0].Trim(); // Remove comments
                 if (string.IsNullOrWhiteSpace(trimmed)) continue;
 
                 // Section Header: [Swoopers]
@@ -54,7 +78,7 @@ namespace KA2
                 {
                     currentSection = trimmed.Substring(1, trimmed.Length - 2);
                     // Create a placeholder Wave - we'll fill data as we go
-                    currentWave = new Wave(new List<PathSegment>(), 0, 0, 0,1, null);
+                    currentWave = new Wave(new List<PathSegment>(), 0, 0, 0, 1, null);
                     library[currentSection] = currentWave;
                     inPathBlock = false;
                     continue;
@@ -119,6 +143,38 @@ namespace KA2
                         currentWave.Segments.Add(segment);
                     }
                 }
+
+
+                ///new code for boss fight
+                bool inPartsBlock = false;
+                if (trimmed.StartsWith("parts")) { inPartsBlock = true; continue; }
+                if (inPartsBlock && trimmed == "}") { inPartsBlock = false; continue; }
+
+                if (inPartsBlock)
+                {
+                    // Example: TopLeft: hits=5, offset=[-32,-32], texture=GunTL.png, rotationRange=[-10,10], rotationSpeed=40, fireDelay=500
+                    var match = Regex.Match(trimmed,
+                        @"(\w+): hits=(\d+), offset=\[(-?\d+),(-?\d+)\], texture=(\w+\.\w+), rotationRange=\[(-?\d+),(-?\d+)\], rotationSpeed=(\d+), fireDelay=(\d+)");
+                    if (match.Success)
+                    {
+                        var partDef = new BossPartDefinition
+                        {
+                            Name = match.Groups[1].Value,
+                            Hits = int.Parse(match.Groups[2].Value),
+                            Offset = new Vector2(int.Parse(match.Groups[3].Value), int.Parse(match.Groups[4].Value)),
+                            TextureName = match.Groups[5].Value,
+                            RotationRange = new Vector2(int.Parse(match.Groups[6].Value), int.Parse(match.Groups[7].Value)),
+                            RotationSpeed = float.Parse(match.Groups[8].Value),
+                            FireDelay = float.Parse(match.Groups[9].Value)
+                        };
+                        currentWave.BossParts.Add(partDef); // Save it to the wave!
+                    }
+                }
+
+
+
+
+
             }
             return library;
         }

@@ -1,4 +1,5 @@
 [Swoopers]
+type=Enemy
 count=10
 speed=300
 delay=300
@@ -53,7 +54,7 @@ count=4
 speed=200
 delay=500
 hits=3
-Next=Boss
+Next=StaticBoss
 paths
 {
 line:[700,-50],[540,150],[320,400],[100,150],[320,400],[540,150]
@@ -62,14 +63,75 @@ path:[700,-50],[560,120],[320,360],[80,120],[320,360],[640,150]
 
 
 
+[StaticBoss]
+count=1
+speed=50
+delay=1
+hits=20   ; Main body HP
+Next=RotationBoss
+parts
+{
+TopLeft: hits=5, offset=[-32,-32], texture=GunTL.png
+TopRight: hits=5, offset=[32,-32], texture=GunTR.png
+BottomLeft: hits=5, offset=[-32,32], texture=GunBL.png
+BottomRight: hits=5, offset=[32,32], texture=GunBR.png
+}
+paths
+{
+line:[100,100],[540,100],[540,380],[100,380],[100,100]
+path:[320,240],[540,120],[540,360],[320,240],[100,360],[100,120],[320,240]
+}
+
+
+[RotationBoss]
 [Boss]
 count=1
 speed=50
 delay=1
-hits=10
+hits=20
 Next=Swoopers
+regenTime=60
+texture=BossBody.png
 paths
 {
-line:[100,100],[540,100],[540,380],[100,380],[100,100],[320,240],[540,380],[100,100]
+line:[100,100],[540,100],[540,380],[100,380],[100,100]
 path:[320,240],[540,120],[540,360],[320,240],[100,360],[100,120],[320,240]
+}
+parts
+{
+TopLeft:
+    hits=5
+    maxHits=5
+    offset=[-32,-32]
+    texture=GunTL.png
+    rotationRange=[-10,10]   ; degrees
+    rotationSpeed=40         ; deg/sec
+    fireDelay=500            ; ms between shots
+
+TopRight:
+    hits=5
+    maxHits=5
+    offset=[32,-32]
+    texture=GunTR.png
+    rotationRange=[-10,10]
+    rotationSpeed=40
+    fireDelay=500
+
+BottomLeft:
+    hits=5
+    maxHits=5
+    offset=[-32,32]
+    texture=GunBL.png
+    rotationRange=[-10,10]
+    rotationSpeed=40
+    fireDelay=500
+
+BottomRight:
+    hits=5
+    maxHits=5
+    offset=[32,32]
+    texture=GunBR.png
+    rotationRange=[-10,10]
+    rotationSpeed=40
+    fireDelay=500
 }
