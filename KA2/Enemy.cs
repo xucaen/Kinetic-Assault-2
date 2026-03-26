@@ -16,11 +16,21 @@ namespace KA2
         //TODO: this must be a setting in wave.dat
         private const double CHARGE_DURATION = 1.0;
 
+
+        /// <summary>
+        /// for line or curve
+        /// </summary>
+        private List<PathSegment> _segments;
+        private int _currentSegmentIndex = 0;
+        private int _currentPointIndex = 0;
+        private float _t = 0f; // For Bezier interpolation (0.0 to 1.0)
+        
+
         private Texture2D _texture;
         public Vector2 Position;
 
-        // CHANGE: Use a List and an Index instead of a Wave object
-        private List<Vector2> _pathPoints;
+        
+        
         private int _currentPathIndex = 0;
 
         private float _speed;
@@ -49,15 +59,17 @@ namespace KA2
         {
             _texture = texture;
             // COPY the points from the wave master plan into this specific enemy
-            _pathPoints = wave.PathPoints.ToList();
+            _segments = wave.Segments;
 
             _startTimer = index * (wave.DelayBetweenEnemies / 1000f);
             _speed = wave.Speed;
             _health = wave.HitsToKill;
 
             // Start at the first coordinate
-            if (_pathPoints.Count > 0)
-                Position = _pathPoints[0];
+            if (_segments.Count > 0 && _segments[0].Points.Count > 0)
+            {
+                Position = _segments[0].Points[0];
+            }
 
             _brain = new EnemyBrain();
         }
@@ -230,37 +242,84 @@ namespace KA2
             }
         }
 
+        private bool _forward = true; // Track direction along path
+
+
         private void HandleMovement(GameTime gameTime)
         {
+            if (_segments.Count == 0) return;
 
-            if (_pathPoints.Count == 0) return;
-
+            PathSegment currentSeg = _segments[_currentSegmentIndex];
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            // 1. Get the current target from our list
-            Vector2 target = _pathPoints[_currentPathIndex];
-            Vector2 direction = target - Position;
+            //////calculating speed is hard. M'kay?
+            Vector2 start = currentSeg.Points[_currentPointIndex];
+            int nextIndex = _currentPointIndex + 1;
+            if (nextIndex >= currentSeg.Points.Count) nextIndex = 0;
+            Vector2 end = currentSeg.Points[nextIndex];
 
-            if (direction.Length() < 5f)
+            float segmentLength = Vector2.Distance(start, end); // distance in pixels
+
+            _t += (_speed * dt) / segmentLength; // _speed in pixels/sec, dt in sec
+
+            Position = Vector2.Lerp(start, end, _t);
+
+            if (_t >= 1f)
             {
-                // 2. Advance the index
-                _currentPathIndex++;
+                _t = 0f;
+                _currentPointIndex = nextIndex;
+            }
 
-                // 3. THE LOOP: If we reached the end of the path (the end of 'end:'), 
-                // set index back to 0 to restart at the beginning of 'start:'
-                if (_currentPathIndex >= _pathPoints.Count)
+            if (currentSeg.Type == PathType.Linear)
+            {
+                nextIndex = _forward ? _currentPointIndex + 1 : _currentPointIndex - 1;
+
+                if (nextIndex >= 0 && nextIndex < currentSeg.Points.Count)
                 {
-                    _currentPathIndex = 0;
+                    Position = Vector2.Lerp(
+                        currentSeg.Points[_currentPointIndex],
+                        currentSeg.Points[nextIndex],
+                        _t
+                    );
+                }
+
+                if (_t >= 1f)
+                {
+                    _t = 0f;
+                    _currentPointIndex = nextIndex;
+
+                    // If reached start or end, reverse direction
+                    if (_currentPointIndex == currentSeg.Points.Count - 1 || _currentPointIndex == 0)
+                        _forward = !_forward;
                 }
             }
             else
             {
-                direction.Normalize();
-                Position += direction * _speed * dt;
-            }
+                // Bezier remains unchanged
+                Vector2 p0 = currentSeg.Points[0];
+                Vector2 p1 = currentSeg.Points[1];
+                Vector2 p2 = currentSeg.Points[2];
 
+                Position = GetBezierPoint(p0, p1, p2, _t);
+
+                if (_t >= 1f)
+                {
+                    _t = 0f;
+                    _currentSegmentIndex = (_currentSegmentIndex + 1) % _segments.Count;
+                }
+            }
         }
 
-     
+        private Vector2 GetBezierPoint(Vector2 p0, Vector2 p1, Vector2 p2, float t)
+        {
+            float invT = 1.0f - t;
+
+            // Formula: (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
+            return (p0 * (invT * invT)) +
+                   (p1 * (2 * invT * t)) +
+                   (p2 * (t * t));
+        }
+
+
     }
 }

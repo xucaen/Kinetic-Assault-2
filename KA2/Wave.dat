@@ -1,44 +1,75 @@
-#waves should be defined in a text file not in code.
-
-#count is the number of enemies to spawn for this wave
-#speed is how fast each enemy moves
-#delay is how long a timespan between each enemy starting their run
-#Next is what wave follows
-
 [Swoopers]
 count=10
-speed=250ms
-delay=300ms
+speed=300
+delay=300
 hits=2
 Next=DiveBombers
 paths
 {
-# Starts off-screen top-left, swoops to center, then circles the top-middle
-start: [-50,-50],[320, 240],[320, 100]
-end:  [320,100],[600,100],[600,16],[40,16],[40,100],[320,100]
+line:[50,-50],[200,150],[400,50],[300,250],[500,200],[320,240],[420,240]
+path:[50,-50],[180,180],[320,80],[460,180],[320,240],[380,220]
 }
 
 [DiveBombers]
 count=5
-speed=600ms
-delay=300ms
+speed=400
+delay=400
 hits=1
+Next=LaserFliers
+paths
+{
+line:[700,-50],[500,150],[600,400],[320,100],[140,300],[320,400],[600,400]
+path:[700,-50],[560,120],[320,250],[80,120],[320,400],[640,380]
+}
+
+
+[LaserFliers]
+count=8
+speed=350
+delay=250
+hits=2
+Next=Spinners
+paths
+{
+line:[50,-50],[200,150],[100,300],[400,200],[320,240]
+path:[50,-50],[180,180],[320,220],[460,180],[380,240]
+}
+
+
+[Spinners]
+count=6
+speed=400
+delay=300
+hits=1
+Next=Bombers
+paths
+{
+line:[320,-50],[540,180],[100,180],[320,400],[540,180],[100,180],[320,-50]
+path:[320,-50],[460,120],[180,120],[320,360],[460,120],[180,120],[320,-50]
+}
+
+[Bombers]
+count=4
+speed=200
+delay=500
+hits=3
 Next=Boss
 paths
 {
-# Starts off-screen right, dives across, and settles in a mid-screen line
-a: [700,-50],[320, 400],[100, 100],[540, 100],[320, 400],[100, 100],[540, 100],[700,-50]
+line:[700,-50],[540,150],[320,400],[100,150],[320,400],[540,150]
+path:[700,-50],[560,120],[320,360],[80,120],[320,360],[640,150]
 }
+
+
 
 [Boss]
 count=1
-speed=50ms
-delay=1ms
+speed=50
+delay=1
 hits=10
 Next=Swoopers
 paths
 {
-# Box pattern to keep the boss constantly shifting on-screen
-a: [100,100],[540,100],[540,380],[100,380],[100,100]
-b: [540,100],[100,100],[100,380],[540,380],[540,100]
+line:[100,100],[540,100],[540,380],[100,380],[100,100],[320,240],[540,380],[100,100]
+path:[320,240],[540,120],[540,360],[320,240],[100,360],[100,120],[320,240]
 }

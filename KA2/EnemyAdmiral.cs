@@ -24,16 +24,16 @@ namespace KA2
         public void LoadContent(ContentManager content)
         {
 
-            // YOU NEED THESE TWO LINES!
             _enemyTexture = content.Load<Texture2D>("enemy_sprites");
             _meteorTexture = content.Load<Texture2D>("meteors");
 
             // Load and store the library
             _waveLibrary = Wave.LoadBehaviorLibrary("Wave.dat");
 
-            if (_waveLibrary.ContainsKey("Swoopers"))
+            if (_waveLibrary != null && _waveLibrary.Count > 0)
             {
-                _currentWaveName = "Swoopers";
+                // Dynamically pick the very first wave defined in the file
+                _currentWaveName = _waveLibrary.Keys.First();
                 SpawnWave(_waveLibrary[_currentWaveName]);
             }
         }
@@ -46,7 +46,7 @@ namespace KA2
             {
                 // Pass all required arguments to the Wave constructor
                 var individualPath = new Wave(
-                    wave.PathPoints.ToList(),
+                    wave.Segments,
                     wave.Speed,
                     wave.DelayBetweenEnemies,
                     wave.EnemyCount,
@@ -78,7 +78,7 @@ namespace KA2
             {
                 string next = _waveLibrary[_currentWaveName].NextWaveName;
 
-                if (!string.IsNullOrEmpty(next) && _waveLibrary.ContainsKey(next))
+                if (!string.IsNullOrWhiteSpace(next) && _waveLibrary.ContainsKey(next))
                 {
                     _currentWaveName = next;
                     SpawnWave(_waveLibrary[_currentWaveName]);

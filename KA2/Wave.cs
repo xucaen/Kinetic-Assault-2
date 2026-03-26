@@ -6,20 +6,27 @@ using System.Linq;
 
 namespace KA2
 {
+    public enum PathType { Linear, Curved }
+
+    public class PathSegment
+    {
+        public List<Vector2> Points = new List<Vector2>();
+        public PathType Type;
+    }
     public class Wave
     {
-        public List<Vector2> PathPoints { get; private set; }
-        public bool IsFinished => PathPoints.Count == 0;
+        public List<PathSegment> Segments { get; private set; } = new List<PathSegment>();
+        public bool IsFinished => Segments.Count == 0;
 
         public float Speed { get; private set; }
         public float DelayBetweenEnemies { get; private set; }
         public int EnemyCount { get; private set; }
-        public string NextWaveName { get; private set; } // Added this
+        public string NextWaveName { get; private set; } 
 
-        public int HitsToKill { get; private set; } = 1; // Default to 1
-        public Wave(List<Vector2> points, float speed, float delay, int count, int hitsToKill = 1, string nextWave = null)
+        public int HitsToKill { get; private set; } = 1; 
+        public Wave(List<PathSegment> segments, float speed, float delay, int count, int hitsToKill = 1, string nextWave = null)
         {
-            PathPoints = new List<Vector2>(points);
+            Segments = segments;
             Speed = speed;
             DelayBetweenEnemies = delay;
             EnemyCount = count;
@@ -40,14 +47,14 @@ namespace KA2
             foreach (var line in lines)
             {
                 string trimmed = line.Split('#')[0].Trim(); // Remove comments
-                if (string.IsNullOrEmpty(trimmed)) continue;
+                if (string.IsNullOrWhiteSpace(trimmed)) continue;
 
                 // Section Header: [Swoopers]
                 if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
                 {
                     currentSection = trimmed.Substring(1, trimmed.Length - 2);
                     // Create a placeholder Wave - we'll fill data as we go
-                    currentWave = new Wave(new List<Vector2>(), 0, 0, 0,0, null);
+                    currentWave = new Wave(new List<PathSegment>(), 0, 0, 0,1, null);
                     library[currentSection] = currentWave;
                     inPathBlock = false;
                     continue;
@@ -67,8 +74,8 @@ namespace KA2
                         case "count": currentWave.EnemyCount = int.Parse(val); break;
                         case "next": currentWave.NextWaveName = val; break;
                         // Strip 'ms' from speed/delay
-                        case "speed": currentWave.Speed = float.Parse(val.Replace("ms", "")); break;
-                        case "delay": currentWave.DelayBetweenEnemies = float.Parse(val.Replace("ms", "")); break;
+                        case "speed": currentWave.Speed = float.Parse(val); break;
+                        case "delay": currentWave.DelayBetweenEnemies = float.Parse(val); break;
                         case "hits": currentWave.HitsToKill = int.Parse(val); break;
                     }
                 }
@@ -79,16 +86,37 @@ namespace KA2
 
                 if (inPathBlock)
                 {
-                    // Extract all [X,Y] patterns from the line
-                    string[] pairs = trimmed.Split(new[] { "],[" }, StringSplitOptions.None);
+                    // Split into Label and Data: "line: [50,50]..." -> ["line", " [50,50]..."]
+                    var parts = trimmed.Split(new[] { ':' }, 2);
+                    if (parts.Length < 2) continue;
+
+                    string label = parts[0].Trim().ToLower();
+                    string coordData = parts[1].Trim(); // This is the actual [X,Y] string
+
+                    var segment = new PathSegment();
+                    segment.Type = label.Contains("path") ? PathType.Curved : PathType.Linear;
+
+                    // Use coordData instead of the original 'trimmed' string
+                    string[] pairs = coordData.Split(new[] { "],[" }, StringSplitOptions.None);
                     foreach (var p in pairs)
                     {
-                        var clean = p.Replace("[", "").Replace("]", "").Split(':').Last(); // Handle 'a: [x,y]'
+                        // Thoroughly scrub everything that isn't a digit, comma, or minus sign
+                        var clean = p.Replace("[", "").Replace("]", "").Trim();
                         var coords = clean.Split(',');
+
                         if (coords.Length == 2)
                         {
-                            currentWave.PathPoints.Add(new Vector2(float.Parse(coords[0]), float.Parse(coords[1])));
+                            // Use TryParse to prevent the game from silently failing if data is messy
+                            if (float.TryParse(coords[0], out float x) && float.TryParse(coords[1], out float y))
+                            {
+                                segment.Points.Add(new Vector2(x, y));
+                            }
                         }
+                    }
+
+                    if (segment.Points.Count > 0)
+                    {
+                        currentWave.Segments.Add(segment);
                     }
                 }
             }
